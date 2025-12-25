@@ -31,9 +31,10 @@ All dependencies are declared explicitly in `Project.toml`.
 
 ### 2.1 Clone the Repository
 
-```bash
+
 git clone https://github.com/dhruvilchidvadiya786r-sys/CovarianceDynamics.jl.git
-cd CovarianceDynamics.jl
+cd CovarianceDynamics.
+
 2.2 Activate and Instantiate the Project
 Start Julia in the repository directory and run:
 juliausing Pkg
