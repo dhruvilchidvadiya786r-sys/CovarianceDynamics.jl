@@ -62,7 +62,7 @@ It preserves symmetry and reflects structured interaction dynamics.
 ### Definition
 
 $$
-K(C) = \operatorname{tr}\bigl(C \, L(C)\bigr) \cdot C
+K(C) = \tr\bigl(C \, L(C)\bigr) \cdot C
 $$
 
 ### Interpretation
