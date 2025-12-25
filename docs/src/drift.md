@@ -27,41 +27,51 @@ Each term has a distinct interpretation and role in the dynamics.
 ### Mean Reversion
 
 The term
+
 $$
 -\lambda (C_t - \bar{C})
 $$
+
 pulls the covariance toward a long-run target $\bar{C}$, preventing uncontrolled growth.
 
 ### Transport Term
 
 The transport contribution
+
 $$
 \psi_t \, T(C_t)
 $$
+
 redistributes covariance mass along interaction pathways induced by the Laplacian operator. This term is modulated by the flux variable $\psi_t$.
 
 ### Curvature Feedback
 
 The curvature term
+
 $$
 I_t \, K(C_t)
 $$
+
 introduces global feedback proportional to the aggregate interaction strength accumulated through memory. This is the mechanism by which past interactions influence the present covariance structure.
 
 ## Flux Drift
 
 The flux variable follows a deterministic decay:
+
 $$
-\frac{d \psi_t}{dt} = -\beta \, \psi_t.
+\frac{d \psi_t}{dt} = -\beta \, \psi_t
 $$
+
 This is the deterministic part of a CIR-type process. Stochastic excitation is added separately in `diffusion.jl`.
 
 ## Memory Drift
 
 The memory variable evolves according to:
+
 $$
-\frac{d I_t}{dt} = -\eta \, I_t + \psi_t.
+\frac{d I_t}{dt} = -\eta \, I_t + \psi_t
 $$
+
 This equation implements the **finite-dimensional Markovian lift** of an exponential memory kernel. The memory variable aggregates past flux values with exponential decay.
 
 ## Structured vs Flattened Drift
