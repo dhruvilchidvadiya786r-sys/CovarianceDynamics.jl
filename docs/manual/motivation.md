@@ -17,7 +17,7 @@ A covariance matrix $C$ is not an arbitrary matrix. It must satisfy:
 
 - **Positive definiteness**  
   $$
-  x^\top C x > 0 \quad \forall \, x \neq 0
+  x^\top C x > 0 \quad \forall x \neq 0
   $$
 
 The set of such matrices forms the **manifold of symmetric positive-definite (SPD) matrices**:
