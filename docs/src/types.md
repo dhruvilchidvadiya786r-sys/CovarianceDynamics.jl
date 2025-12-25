@@ -92,8 +92,6 @@ Those belong in later layers of the architecture.
 
 ---
 
-## Position in the Architecture
 
-The dependency flow begins here:
 
 
