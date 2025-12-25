@@ -2,121 +2,101 @@
 
 ## Purpose
 
-The `operators.jl` file defines all **deterministic matrix operators**
-that act directly on the covariance matrix \( C \).
+The `operators.jl` file defines all **deterministic matrix operators** that act directly on the covariance matrix $C$.  
+These operators encode **structural interactions** between components of the covariance without introducing time dependence, noise, or numerical side effects.  
+They form the mathematical core of the model’s geometry.
 
-These operators encode **structural interactions** between components
-of the covariance without introducing time dependence, noise, or
-numerical side effects.
+## Why Operators Are Separated from Dynamics
 
-They are the mathematical core of the model’s geometry.
+In stochastic models, mixing operators with drift or diffusion often leads to:
 
----
-
-## Why operators are separated from dynamics
-
-In stochastic models, mixing operators with drift or diffusion leads to:
 - duplicated logic
 - hidden assumptions
 - untestable components
 - broken invariants
 
-`operators.jl` isolates **pure algebraic structure** so that:
-- mathematical properties are transparent
+By isolating **pure algebraic structure** in `operators.jl`, we ensure that:
+
+- mathematical properties remain transparent
 - operators can be tested independently
 - alternative dynamics can reuse the same geometry
-
----
 
 ## The Interaction Laplacian
 
 ### Definition
 
-The interaction Laplacian \( L(C) \) is constructed by:
-1. Converting the covariance matrix to a correlation matrix
-2. Building a weighted interaction graph
-3. Returning the symmetric graph Laplacian
+The interaction Laplacian $L(C)$ is constructed as follows:
 
-\[
+1. Convert the covariance matrix to a correlation matrix  
+2. Build a weighted interaction graph  
+3. Return the symmetric graph Laplacian
+
+$$
 L(C) = D(C) - W(C)
-\]
+$$
 
-where weights depend on absolute correlations.
+where the weights depend on absolute correlations.
 
 ### Properties
 
-- symmetric
-- positive semidefinite
-- data-dependent
-- invariant under scaling of \( C \)
-
----
+- Symmetric
+- Positive semidefinite
+- Data-dependent
+- Invariant under scaling of $C$
 
 ## Transport Operator
 
 ### Definition
 
-\[
-T(C) = C L(C) + L(C) C
-\]
+$$
+T(C) = C \, L(C) + L(C) \, C
+$$
 
 ### Interpretation
 
-The transport operator redistributes covariance mass along
-interaction pathways induced by \( L(C) \).
-
+The transport operator redistributes covariance mass along interaction pathways induced by $L(C)$.  
 It preserves symmetry and reflects structured interaction dynamics.
-
----
 
 ## Curvature Feedback Operator
 
 ### Definition
 
-\[
-K(C) = \mathrm{tr}(C L(C)) \cdot C
-\]
+$$
+K(C) = \operatorname{tr}\bigl(C \, L(C)\bigr) \cdot C
+$$
 
 ### Interpretation
 
-This term introduces **global feedback** proportional to the total
-interaction energy.
-
-It couples local interaction structure with global covariance scale.
-
----
+This term introduces **global feedback** proportional to the total interaction energy.  
+It couples local interaction structure with the global covariance scale.
 
 ## Diagnostic Operators
 
-Several non-dynamical diagnostics are provided:
+Several non-dynamical diagnostic tools are provided, including:
 
-- operator norms
-- symmetry checks
-- growth rate estimates
+- Operator norms
+- Symmetry checks
+- Growth rate estimates
 
 These are used to:
-- verify theoretical growth assumptions
-- detect numerical instability
-- validate Lyapunov estimates
+
+- Verify theoretical growth assumptions
+- Detect potential numerical instability
+- Validate Lyapunov estimates
 
 They **do not** affect the model dynamics.
 
----
+## What Does NOT Belong in This File
 
-## What does NOT belong in this file
+The following are intentionally excluded to maintain separation of concerns:
 
-The following are intentionally excluded:
+- Time evolution or drift equations
+- Stochastic diffusion terms
+- Solver interfaces
+- Callbacks or manifold projections
 
-- time evolution
-- drift equations
-- stochastic diffusion
-- solver interfaces
-- callbacks or projections
-
-Those belong in later layers.
-
----
+These belong in their respective dedicated files.
 
 ## Position in the Architecture
 
-
+`operators.jl` provides the foundational geometric layer of the package. Its pure functions are imported by `drift.jl`, `diffusion.jl`, and `diagnostics.jl`, serving as the single source of truth for all interaction-induced algebraic operations on the covariance matrix.
