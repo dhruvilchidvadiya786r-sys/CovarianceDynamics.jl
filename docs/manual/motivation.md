@@ -14,14 +14,19 @@ or incapable of capturing persistent temporal dependence.
 
 ## 1. Covariance matrices are not vector-valued states
 
-A covariance matrix `C` is not an arbitrary matrix. It must satisfy:
+A covariance matrix C is not an arbitrary matrix. It must satisfy:
 
-- symmetry: `C = C^T`
-- positive definiteness: `x^T C x > 0` for all nonzero `x`
+- symmetry:
+
+      C = C^\top
+
+- positive definiteness:
+
+      x^\top C x > 0   for all x ≠ 0
 
 The set of such matrices forms the **manifold of symmetric positive definite (SPD) matrices**:
 
-    S_{++}^n
+      \mathcal{S}_{++}^n
 
 This space:
 
@@ -29,25 +34,25 @@ This space:
 - is **not closed under addition with arbitrary noise**
 - has **nontrivial geometry**
 
-As a consequence, standard stochastic modeling approaches that treat `C_t`
-as a vector in `R^{n^2}` are structurally unsound.
+As a consequence, standard stochastic modeling approaches that treat C(t)
+as a vector in R^{n^2} are structurally unsound.
 
 ---
 
 ## 2. Why naïve stochastic covariance equations fail
 
-A common but fundamentally flawed approach is to treat a covariance matrix `C_t`
+A common but fundamentally flawed approach is to treat a covariance matrix C(t)
 as an unconstrained matrix-valued state and write a stochastic evolution of the form:
 
-    dC_t = F(C_t) dt + G(C_t) dW_t
+      dC(t) = F(C(t))\,dt + G(C(t))\,dW(t)
 
-where `dW_t` denotes a matrix-valued Brownian motion.
+where W(t) denotes a matrix-valued Brownian motion.
 
 Such formulations are **not well-defined on the space of covariance matrices**.
 
 The issue is structural rather than numerical:
 
-- the space `S_{++}^n` is not a vector space
+- the space \mathcal{S}_{++}^n is not a vector space
 - generic stochastic increments do not preserve symmetry or positive definiteness
 - even infinitesimal noise can instantaneously leave the SPD cone
 - post-hoc projections introduce bias and destroy dynamical consistency
