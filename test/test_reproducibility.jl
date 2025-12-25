@@ -1,3 +1,104 @@
+###############################################################################
+# test_reproducibility.jl
+#
+# Reproducibility tests for CovarianceDynamics.jl
+#
+# What is tested:
+#   1) Identical random seeds → identical trajectories
+#   2) Different random seeds → different trajectories
+#
+# What is NOT tested:
+#   - Statistical properties
+#   - Long-time ergodicity
+#   - Distributional convergence
+#
+# This file guarantees scientific reproducibility.
+###############################################################################
+
+using Test
+using Random
+using LinearAlgebra
+using DifferentialEquations
+using CovarianceDynamics
+
+# -------------------------------------------------------------------
+# Shared setup
+# -------------------------------------------------------------------
+n = 2
+Cbar = Matrix{Float64}(I, n, n)
+U    = Matrix{Float64}(I, n, n)
+
+params = CovMemoryParams(
+    n;
+    λ   = 1.0,
+    C̄   = Cbar,
+    β   = 1.0,
+    σψ  = 0.2,
+    ε   = 0.1,
+    U   = U,
+    η   = 1.0
+)
+
+tspan = (0.0, 1.0)
+dt = 1e-3
+
+# -------------------------------------------------------------------
+# Helper function: run simulation with fixed seed
+# -------------------------------------------------------------------
+function run_with_seed(seed::Int)
+    Random.seed!(seed)
+    prob = covmemory_problem(params, tspan)
+    sol  = solve(prob, EM(); dt = dt)
+    return sol.u[end]
+end
+
+# -------------------------------------------------------------------
+# Tests
+# -------------------------------------------------------------------
+@testset "Reproducibility" begin
+
+    # ---------------------------------------------------------------
+    # 1) Same seed → identical results
+    # ---------------------------------------------------------------
+    u1 = run_with_seed(12345)
+    u2 = run_with_seed(12345)
+
+    @test u1 == u2
+
+    # ---------------------------------------------------------------
+    # 2) Different seeds → different results
+    # ---------------------------------------------------------------
+    u3 = run_with_seed(54321)
+
+    @test u1 != u3
+
+    # ---------------------------------------------------------------
+    # 3) Deterministic drift consistency (noise disabled)
+    # ---------------------------------------------------------------
+    Random.seed!(999)
+
+    params_det = CovMemoryParams(
+        n;
+        λ   = params.λ,
+        C̄   = params.C̄,
+        β   = params.β,
+        σψ  = 0.0,   # disable stochasticity
+        ε   = 0.0,
+        U   = params.U,
+        η   = params.η
+    )
+
+    prob_det_1 = covmemory_problem(params_det, tspan)
+    sol_det_1  = solve(prob_det_1, EM(); dt = dt)
+
+    Random.seed!(1_000_000)
+
+    prob_det_2 = covmemory_problem(params_det, tspan)
+    sol_det_2  = solve(prob_det_2, EM(); dt = dt)
+
+    @test sol_det_1.u[end] == sol_det_2.u[end]
+
+end
 
 ###############################################################################
 # test_markov_lift.jl
