@@ -12,36 +12,51 @@ Covariance matrices arise naturally in statistics, stochastic modeling, filterin
 
 A covariance matrix \( C \) is not an arbitrary matrix. It must satisfy:
 
-- symmetry: \( C = C^\top \)
-- positive definiteness: \( x^\top C x > 0 \) for all nonzero \( x \)
+- symmetry: \( C = C^\top \),
+- positive definiteness: \( x^\top C x > 0 \) for all \( x \neq 0 \).
 
-The set of such matrices forms the **manifold of symmetric positive definite (SPD) matrices**, denoted \( \mathcal{S}_{++}^n \).
+The set of such matrices forms the **manifold of symmetric positive definite (SPD) matrices**, denoted
+\[
+\mathcal{S}_{++}^n .
+\]
 
 This space:
+
 - is **not a vector space**,
 - is **not closed under addition with arbitrary noise**,
 - and has **nontrivial geometry**.
 
-As a consequence, standard stochastic modeling approaches that treat \( C_t \) as a vector in \( \mathbb{R}^{n^2} \) are structurally unsound.
+As a consequence, standard stochastic modeling approaches that treat \( C_t \) as a vector in
+\( \mathbb{R}^{n^2} \) are structurally unsound.
 
 ---
 
-## 2. Why naïve stochastic covariance models fail
+## 2. Why naïve stochastic covariance equations fail
 
-Many commonly used covariance dynamics take the form:
+A common but fundamentally flawed approach is to treat a covariance matrix \( C_t \)
+as an unconstrained matrix-valued state and write a stochastic evolution of the form
 \[
-dC_t = F(C_t)\,dt + G(C_t)\,dW_t
+\mathrm{d}C_t
+=
+F(C_t)\,\mathrm{d}t
++
+\mathcal{G}(C_t)\,\mathrm{d}W_t ,
 \]
-where \( dW_t \) is unconstrained noise.
+where \( \mathrm{d}W_t \) denotes a matrix-valued Brownian motion.
 
-Such formulations often fail in practice because:
+Such formulations are **not well-defined on the space of covariance matrices**.
 
-- additive noise destroys positive definiteness,
-- symmetry is violated by numerical discretization,
-- long-time simulations drift outside the SPD cone,
-- ad-hoc projections introduce bias and instability.
+The issue is structural rather than numerical:
 
-These failures are **not numerical artifacts** — they are consequences of ignoring the geometry of the state space.
+- the space \( \mathcal{S}_{++}^n \) is not a vector space,
+- generic stochastic increments do not preserve symmetry or positive definiteness,
+- even infinitesimal noise can instantaneously leave the SPD cone,
+- post-hoc projections introduce bias and destroy dynamical consistency.
+
+As a result, unconstrained matrix-valued SDEs do **not** define valid covariance dynamics,
+regardless of discretization or solver choice.
+
+This failure motivates the need for models whose dynamics are **intrinsically defined on the SPD manifold**.
 
 ---
 
@@ -69,10 +84,11 @@ In many real systems, covariance evolution depends not only on the current state
 
 Purely Markovian models are structurally incapable of capturing these effects.
 
-However, introducing memory naively (e.g. via explicit history dependence) breaks compatibility with:
+However, introducing memory naively (for example, via explicit history dependence) breaks compatibility with:
+
 - standard SDE solvers,
 - reproducibility,
-- and numerical stability.
+- numerical stability.
 
 ---
 
@@ -127,7 +143,7 @@ This project does **not** claim to solve all aspects of stochastic covariance mo
 - a concrete formulation of covariance dynamics on the SPD manifold,
 - a Markovian lift framework for memory-aware covariance evolution,
 - a numerically validated implementation,
-- and transparent diagnostics for long-time behavior.
+- transparent diagnostics for long-time behavior.
 
 These contributions form a **foundation**, not a finished theory.
 
@@ -154,4 +170,3 @@ In summary, this project is motivated by three core observations:
 3. Existing tools rarely address both simultaneously.
 
 `CovarianceDynamics.jl` is designed to address this intersection directly, transparently, and reproducibly.
-
