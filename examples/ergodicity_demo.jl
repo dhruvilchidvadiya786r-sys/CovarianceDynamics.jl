@@ -127,5 +127,5 @@ println("  • Autocorrelation decays monotonically with lag.")
 println("  • Mixing is slow but evident (hypoelliptic behavior).")
 println("  • No divergence or instability observed.")
 
-println("✅ Ergodicity demo completed successfully.")
+println(" Ergodicity demo completed successfully.")
 
