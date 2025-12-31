@@ -1,11 +1,11 @@
 # Benchmarks: Performance and Scaling Characteristics
 
-This section documents the **computational performance** of
-`CovarianceDynamics.jl` and analyzes how cost scales with problem size,
+This section documents the **computational performance** of  
+`CovarianceDynamics.jl` and analyzes how cost scales with problem size,  
 time horizon, and model complexity.
 
-The purpose of these benchmarks is not micro-optimization, but to establish
-that the implementation is **efficient enough to be useful**, **scales
+The purpose of these benchmarks is not micro-optimization, but to establish  
+that the implementation is **efficient enough to be useful**, **scales  
 predictably**, and **does not hide pathological bottlenecks**.
 
 ---
@@ -15,15 +15,15 @@ predictably**, and **does not hide pathological bottlenecks**.
 Benchmarking in this project follows three guiding principles:
 
 1. **Model-first performance**  
-   We measure performance of the full model, not isolated kernels.
+   Performance is measured on the *full stochastic model*, not isolated kernels.
 
 2. **Realistic workloads**  
-   Benchmarks reflect actual usage: long SDE trajectories with memory.
+   Benchmarks reflect actual usage: long SDE trajectories with memory effects.
 
 3. **Interpretability over raw speed**  
-   Scaling behavior is more important than absolute timing.
+   Scaling behavior is prioritized over absolute wall-clock timings.
 
-This aligns with the expectations of scientific users and funding agencies.
+This aligns with expectations of scientific users and funding agencies.
 
 ---
 
@@ -31,9 +31,12 @@ This aligns with the expectations of scientific users and funding agencies.
 
 All benchmarks are performed under the following conditions:
 
-- Language: Julia (latest stable)
+- Language: Julia (latest stable release)
 - Solver: Euler–Maruyama
-- Time step: \( \Delta t = 10^{-3} \)
+- Time step:
+
+      Δt = 1e-3
+
 - Platform: standard laptop / workstation CPU
 - No GPU acceleration
 - No multi-threading unless explicitly stated
@@ -53,13 +56,14 @@ The dominant cost per time step consists of:
 - evaluating diffusion operators,
 - writing results to memory.
 
-No expensive linear algebra (e.g. eigendecomposition) is performed per step.
+No expensive linear algebra operations (e.g. eigendecomposition or projections)  
+are performed per step.
 
 ---
 
 ### 3.2 Observed behavior
 
-For fixed dimension \( n \):
+For fixed covariance dimension `n`:
 
 - time per step is approximately constant,
 - no progressive slowdown is observed,
@@ -75,17 +79,17 @@ This indicates absence of hidden allocations or state growth.
 
 Simulations are run with increasing final times:
 
-- \( T = 1 \)
-- \( T = 10 \)
-- \( T = 50 \)
+      T = 1
+      T = 10
+      T = 50
 
-with fixed time step.
+with fixed time step Δt.
 
 ---
 
 ### 4.2 Results
 
-- total runtime scales linearly with number of steps,
+- total runtime scales linearly with the number of time steps,
 - no superlinear overhead is observed,
 - solver performance remains consistent.
 
@@ -97,12 +101,16 @@ This confirms that long-time simulations are feasible.
 
 ### 5.1 Theoretical expectation
 
+Let `n` denote the covariance dimension.
+
 The state size scales as:
 
-- covariance: \( n^2 \),
-- memory variables: \( O(n^2) \) or smaller.
+- covariance matrix: O(n²)
+- memory variables: O(n²) or smaller
 
-Thus, per-step cost is expected to scale roughly as \( O(n^2) \).
+Hence, the expected per-step computational cost scales as:
+
+      cost_per_step ∝ n²
 
 ---
 
@@ -114,7 +122,7 @@ As dimension increases:
 - no sudden performance cliffs appear,
 - memory usage grows predictably.
 
-This matches theoretical expectations and confirms the absence of
+This matches theoretical expectations and confirms the absence of  
 dimension-dependent instability.
 
 ---
@@ -123,9 +131,10 @@ dimension-dependent instability.
 
 ### 6.1 Allocation behavior
 
-Benchmarks confirm:
+Benchmarks confirm that:
 
-- drift and diffusion functions are in-place,
+- drift functions are in-place,
+- diffusion functions are in-place,
 - no significant per-step allocations occur,
 - garbage collection overhead is negligible.
 
@@ -140,7 +149,8 @@ The dominant memory cost arises from:
 - storing solution trajectories,
 - retaining state vectors at each time step.
 
-This cost is user-controllable via solver options.
+This cost is fully user-controllable via solver output options  
+(e.g. saving frequency or online statistics).
 
 ---
 
@@ -156,7 +166,7 @@ Memory dynamics introduce:
 However:
 
 - these operations are linear and local,
-- they do not change asymptotic scaling.
+- they do not change the asymptotic scaling.
 
 ---
 
@@ -164,7 +174,7 @@ However:
 
 In practice:
 
-- memory dynamics add modest overhead,
+- memory dynamics add a modest overhead,
 - total runtime remains dominated by covariance evolution.
 
 This confirms that non-Markovian effects are computationally affordable.
@@ -173,11 +183,11 @@ This confirms that non-Markovian effects are computationally affordable.
 
 ## 8. Comparison with naïve covariance models
 
-Compared to naïve covariance SDEs that:
+Compared to naïve covariance SDE models that:
 
 - perform eigenvalue corrections,
 - apply projections at each step,
-- enforce positivity post hoc,
+- enforce positive definiteness post hoc,
 
 `CovarianceDynamics.jl`:
 
@@ -185,7 +195,7 @@ Compared to naïve covariance SDEs that:
 - achieves better long-time efficiency,
 - scales more smoothly with dimension.
 
-This is a direct benefit of geometric model design.
+This improvement arises directly from **geometric model design**.
 
 ---
 
@@ -194,11 +204,11 @@ This is a direct benefit of geometric model design.
 Benchmarks indicate that:
 
 - higher-order solvers increase per-step cost,
-- but reduce required time steps for accuracy,
+- but reduce the number of required steps for accuracy,
 - overall runtime remains comparable.
 
-Solver choice allows users to trade accuracy for speed without changing
-model structure.
+Solver choice allows users to trade accuracy for speed  
+without changing the model structure.
 
 ---
 
@@ -212,9 +222,10 @@ Based on benchmarks, the model is well-suited for:
 - parameter sweeps and sensitivity analysis.
 
 Very high-dimensional problems may benefit from:
+
 - adaptive solvers,
 - reduced trajectory storage,
-- future optimizations.
+- future low-rank or structure-exploiting optimizations.
 
 ---
 
@@ -228,6 +239,5 @@ Benchmark results demonstrate that `CovarianceDynamics.jl`:
 - supports long-time integration,
 - remains efficient without sacrificing correctness.
 
-These properties make the package suitable for both research use and
-open-source contribution at a serious level.
-
+These properties make the package suitable for both **serious research use**  
+and **high-quality open-source contribution**.
