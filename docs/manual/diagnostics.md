@@ -57,8 +57,10 @@ Whether the covariance matrix remains strictly positive definite at all times.
 
 **How:**  
 At each recorded time step:
+
 - the covariance matrix is reshaped,
-- tested using `isposdef` on its symmetric form.
+- symmetrized numerically,
+- tested using `isposdef`.
 
 **Why it matters:**  
 Positive definiteness is a hard physical constraint. Any violation renders the
@@ -81,7 +83,7 @@ Time series of diagonal and selected off-diagonal entries are extracted from
 the solution trajectory.
 
 **Why it matters:**  
-Unbounded growth indicates instability or incorrect drift/noise balance.
+Unbounded growth indicates instability or incorrect drift–noise balance.
 
 **Observed behavior:**  
 All components fluctuate within finite ranges over long time horizons.
@@ -94,7 +96,11 @@ All components fluctuate within finite ranges over long time horizons.
 Stability over extended simulation time.
 
 **How:**  
-Simulations are run for \( T = 50 \) (50,000+ time steps).
+Simulations are run for:
+
+      T = 50
+
+corresponding to more than 50,000 integration steps.
 
 **Why it matters:**  
 Many unstable stochastic systems appear well-behaved over short intervals but
@@ -113,15 +119,21 @@ No blow-up, collapse, or drift to degeneracy is observed.
 Autocorrelation of individual covariance components at varying time lags.
 
 **How:**  
-For a time series \( x_t \), the empirical autocorrelation is computed as:
+Given a scalar time series `x_t`, the empirical autocorrelation at lag `ℓ` is
+computed as:
 
-- mean-centered correlation between \( x_t \) and \( x_{t+\ell} \),
-- normalized by total variance.
+      Corr(ℓ) = E[(x_t - μ)(x_{t+ℓ} - μ)] / Var(x)
 
-Multiple lags are evaluated.
+where:
+
+- `μ` is the empirical mean,
+- `Var(x)` is the empirical variance.
+
+Multiple lag values are evaluated.
 
 **Why it matters:**  
 Autocorrelation quantifies:
+
 - persistence,
 - memory effects,
 - mixing speed.
@@ -136,7 +148,8 @@ Observed diagnostics show:
 - **medium lags:** gradual decay  
 - **long lags:** significant reduction  
 
-This confirms:
+This confirms that:
+
 - memory effects are present,
 - the system is not frozen,
 - stochastic mixing occurs.
@@ -155,11 +168,13 @@ Simulations are repeated with different values of `η`.
 
 **Why it matters:**  
 A valid memory mechanism must produce:
+
 - faster mixing for smaller `η`,
 - slower mixing for larger `η`.
 
 **Observed behavior:**  
-Autocorrelation decay accelerates as `η` decreases, matching expectations.
+Autocorrelation decay accelerates as `η` decreases, matching theoretical
+expectations.
 
 ---
 
@@ -170,15 +185,16 @@ Amplitude of covariance fluctuations under increased stochastic forcing.
 
 **How:**  
 Noise parameters are increased while monitoring:
+
 - SPD preservation,
 - boundedness,
 - fluctuation magnitude.
 
 **Why it matters:**  
-The model must remain stable under nontrivial noise.
+The model must remain stable under nontrivial stochastic excitation.
 
 **Observed behavior:**  
-Noise increases variability without destroying invariants.
+Noise increases variability without destroying structural invariants.
 
 ---
 
@@ -208,7 +224,7 @@ For transparency, the following diagnostics are **not relied upon**:
 - post-processed projections,
 - solver-dependent error metrics.
 
-This ensures that validation reflects **true dynamics**, not artifacts.
+This ensures that validation reflects **true dynamics**, not numerical artifacts.
 
 ---
 
@@ -221,7 +237,7 @@ Taken together, the diagnostics demonstrate that:
 - memory effects are real and tunable,
 - stochastic forcing produces controlled variability.
 
-These results provide strong empirical evidence that the model is behaving as
+These results provide strong empirical evidence that the model behaves as
 designed.
 
 ---
@@ -237,4 +253,3 @@ Diagnostics in `CovarianceDynamics.jl` are designed to validate:
 
 They are grounded in direct measurements, reproducible experiments, and
 transparent interpretation, forming the empirical backbone of the project.
-
