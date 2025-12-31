@@ -121,11 +121,3 @@ for (lag, ac) in ac_vals
     println("  lag = $(lpad(lag,4)) → autocorr = $(round(ac, digits=4))")
 end
 
-println()
-println("Interpretation:")
-println("  • Autocorrelation decays monotonically with lag.")
-println("  • Mixing is slow but evident (hypoelliptic behavior).")
-println("  • No divergence or instability observed.")
-
-println(" Ergodicity demo completed successfully.")
-
