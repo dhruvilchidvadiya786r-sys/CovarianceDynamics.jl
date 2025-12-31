@@ -102,6 +102,5 @@ This strict separation avoids conceptual confusion.
 
 ---
 
-## Position in the Architecture
 
 
