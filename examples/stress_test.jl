@@ -1,16 +1,16 @@
 ###############################################################################
 # stress_test.jl
 #
-# Stress testing CovarianceDynamics.jl under extreme conditions
+# Numerical stress testing for CovarianceDynamics.jl
 #
-# This example demonstrates:
-#   - robustness under large noise
-#   - long-time numerical stability
-#   - preservation of SPD under adverse regimes
+# Purpose:
+#   - expose numerical failure modes under extreme regimes
+#   - quantify SPD violations (not assert against them)
+#   - verify long-time stability (no NaN / Inf)
 #
 # IMPORTANT:
 # This test is NOT physically meaningful.
-# It is designed to expose numerical or structural weaknesses.
+# It is a diagnostic tool for numerical robustness.
 ###############################################################################
 
 using Random
@@ -19,97 +19,90 @@ using Statistics
 using DifferentialEquations
 using CovarianceDynamics
 
-# -----------------------------
+# ---------------------------------------------------------------------
 # Reproducibility
-# -----------------------------
+# ---------------------------------------------------------------------
 Random.seed!(999)
 
-# -----------------------------
+# ---------------------------------------------------------------------
 # Problem dimension
-# -----------------------------
+# ---------------------------------------------------------------------
 n = 2
 
-# -----------------------------
+# ---------------------------------------------------------------------
 # Reference covariance
-# -----------------------------
-Cbar = Matrix{Float64}(I, n, n)
+# ---------------------------------------------------------------------
+C̄ = Matrix{Float64}(I, n, n)
 
-# -----------------------------
+# ---------------------------------------------------------------------
 # Noise structure
-# -----------------------------
+# ---------------------------------------------------------------------
 U = Matrix{Float64}(I, n, n)
 
-# -----------------------------
-# Extreme parameter regime
-# -----------------------------
+# ---------------------------------------------------------------------
+# Extreme parameter regime (intentionally adversarial)
+# ---------------------------------------------------------------------
 params = CovMemoryParams(
     n;
     λ   = 0.2,     # weak mean reversion
-    C̄   = Cbar,
+    C̄   = C̄,
     β   = 1.0,
     σψ  = 0.5,     # large memory noise
     ε   = 0.3,     # large covariance noise
     U   = U,
-    η   = 0.2      # very slow memory decay
+    η   = 0.2      # slow memory decay
 )
 
-# -----------------------------
-# Long and aggressive horizon
-# -----------------------------
+# ---------------------------------------------------------------------
+# Long horizon
+# ---------------------------------------------------------------------
 tspan = (0.0, 100.0)
 
-# -----------------------------
+# ---------------------------------------------------------------------
 # Construct SDE problem
-# -----------------------------
+# ---------------------------------------------------------------------
 prob = covmemory_problem(params, tspan)
 
-# -----------------------------
-# Solve using Euler–Maruyama
-# -----------------------------
+# ---------------------------------------------------------------------
+# Solve with explicit Euler–Maruyama
+# NOTE: EM does NOT preserve manifold constraints
+# ---------------------------------------------------------------------
 sol = solve(
     prob,
     EM();
-    dt = 5e-4      # smaller step due to high noise
+    dt = 5e-4
 )
 
-# -----------------------------
-# SPD verification helper
-# -----------------------------
-function is_spd_state(u::AbstractVector, n::Int)
+# ---------------------------------------------------------------------
+# Helper diagnostics
+# ---------------------------------------------------------------------
+function min_eig(u::AbstractVector, n::Int)
     C = reshape(u[1:n^2], n, n)
-    return isposdef(Symmetric(C))
+    return minimum(eigvals(Symmetric(C)))
 end
 
-# -----------------------------
-# SPD invariance check
-# -----------------------------
-spd_ok = all(is_spd_state(u, n) for u in sol.u)
-
-# -----------------------------
-# Norm growth diagnostics
-# -----------------------------
 function frob_norm(u::AbstractVector, n::Int)
     C = reshape(u[1:n^2], n, n)
-    return norm(C, fro)
+    return norm(C)
 end
 
-norms = [frob_norm(u, n) for u in sol.u]
+# ---------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------
+min_eigs = [min_eig(u, n) for u in sol.u]
+norms    = [frob_norm(u, n) for u in sol.u]
 
-norm_mean = mean(norms)
-norm_std  = std(norms)
-norm_max  = maximum(norms)
+spd_fraction = mean(min_eigs .> -1e-8)
+worst_eig    = minimum(min_eigs)
 
-# -----------------------------
-# NaN / Inf check
-# -----------------------------
 finite_ok = all(isfinite, norms)
 
-# -----------------------------
-# Output summary
-# -----------------------------
-println("=== CovarianceDynamics.jl :: Stress Test ===")
-println("Time horizon            : $(tspan)")
-println("Steps                   : $(length(sol.t))")
+# ---------------------------------------------------------------------
+# Report
+# ---------------------------------------------------------------------
+println("=== CovarianceDynamics.jl :: Numerical Stress Test ===")
+println("Time horizon           : $tspan")
+println("Number of steps        : $(length(sol.t))")
 println()
 println("Extreme parameters:")
 println("  λ     = $(params.λ)")
@@ -118,28 +111,16 @@ println("  ε     = $(params.ε)")
 println("  η     = $(params.memory.η)")
 println()
 println("Diagnostics:")
-println("  SPD preserved          : $spd_ok")
-println("  Finite values          : $finite_ok")
-println("  Mean ||C||_F           : $norm_mean")
-println("  Std  ||C||_F           : $norm_std")
-println("  Max  ||C||_F           : $norm_max")
-println()
-println("Interpretation:")
-println("  • System remains stable under extreme noise.")
-println("  • No NaNs, Infs, or SPD violations observed.")
-println("  • Fluctuations increase but remain bounded.")
-println()
-println("  This regime is for robustness testing only.")
-println(" Stress test completed successfully.")
+println("  Finite values              : $finite_ok")
+println("  Fraction SPD states        : $(round(spd_fraction, digits=4))")
+println("  Worst min eigenvalue       : $(round(worst_eig, digits=6))")
+println("  Mean ||C||_F               : $(mean(norms))")
+println("  Std  ||C||_F               : $(std(norms))")
+println("  Max  ||C||_F               : $(maximum(norms))")
 
-# -----------------------------
-# Hard failure checks
-# -----------------------------
-if !spd_ok
-    error("SPD violation detected under stress test.")
-end
-
+# ---------------------------------------------------------------------
+# Hard failure only for catastrophic breakdown
+# ---------------------------------------------------------------------
 if !finite_ok
-    error("Non-finite values detected under stress test.")
+    error("Numerical instability detected: NaN or Inf encountered.")
 end
-
