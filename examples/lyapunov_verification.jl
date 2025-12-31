@@ -83,9 +83,8 @@ sol = solve(
 #
 function lyapunov(u::AbstractVector, n::Int, Cbar::AbstractMatrix)
     C = reshape(u[1:n^2], n, n)
-    return norm(C - Cbar, fro)^2
+    return norm(C - Cbar)^2  # Frobenius norm (default for matrices)
 end
-
 # -----------------------------
 # Evaluate along trajectory
 # -----------------------------
@@ -124,10 +123,4 @@ println("Time-split comparison:")
 println("  Early-time mean     : $V_early")
 println("  Late-time mean      : $V_late")
 println()
-println("Interpretation:")
-println("  • Lyapunov values remain bounded.")
-println("  • No monotonic growth observed.")
-println("  • No numerical instability detected.")
-println()
-println(" Lyapunov verification completed successfully.")
 
