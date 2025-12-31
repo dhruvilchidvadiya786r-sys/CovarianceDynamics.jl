@@ -132,11 +132,5 @@ for i in eachindex(lags)
     )
 end
 
-println()
-println("Interpretation:")
-println("  • Larger η (slower decay) ⇒ stronger temporal persistence.")
-println("  • Smaller η (faster decay) ⇒ faster decorrelation.")
-println("  • Memory parameter directly controls effective non-Markovianity.")
-println()
-println(" Memory effects demo completed successfully.")
+
 
