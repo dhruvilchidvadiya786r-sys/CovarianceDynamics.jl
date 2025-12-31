@@ -105,5 +105,5 @@ if !spd_ok
     error("SPD violation detected in basic simulation.")
 end
 
-println("✅ Basic simulation completed successfully.")
+
 
