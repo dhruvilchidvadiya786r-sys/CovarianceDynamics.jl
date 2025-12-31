@@ -61,7 +61,10 @@ As with all explicit SDE solvers:
 - stability depends on resolving the fastest dynamics.
 
 The documentation reports results for:
-- \( \Delta t = 10^{-3} \), which is conservative.
+
+      Δt = 1e-3
+
+which is conservative.
 
 ---
 
@@ -80,7 +83,11 @@ The package does not attempt to enforce solver choice.
 
 ### 4.1 Quadratic state growth
 
-The covariance matrix contributes \( n^2 \) state variables.
+The covariance matrix contributes:
+
+      n²
+
+state variables.
 
 As a result:
 
@@ -230,4 +237,3 @@ By stating these limitations explicitly, the project:
 - provides a solid foundation for future work.
 
 This transparency is essential for serious scientific open-source software.
-
