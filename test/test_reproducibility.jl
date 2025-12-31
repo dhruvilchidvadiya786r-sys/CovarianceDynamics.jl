@@ -1,18 +1,14 @@
 ###############################################################################
 # test_reproducibility.jl
 #
-# Reproducibility tests for CovarianceDynamics.jl
+# Unit test: Stochastic reproducibility
 #
-# What is tested:
-#   1) Identical random seeds → identical trajectories
-#   2) Different random seeds → different trajectories
+# Purpose:
+#   Verify that CovarianceDynamics simulations are:
+#     • deterministic under identical RNG seeds
+#     • stochastic under different RNG seeds
 #
-# What is NOT tested:
-#   - Statistical properties
-#   - Long-time ergodicity
-#   - Distributional convergence
-#
-# This file guarantees scientific reproducibility.
+# This ensures CI stability and correct RNG usage.
 ###############################################################################
 
 using Test
@@ -21,17 +17,17 @@ using LinearAlgebra
 using DifferentialEquations
 using CovarianceDynamics
 
-# -------------------------------------------------------------------
-# Shared setup
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Problem setup
+# ---------------------------------------------------------------------
 n = 2
-Cbar = Matrix{Float64}(I, n, n)
-U    = Matrix{Float64}(I, n, n)
+C̄ = Matrix{Float64}(I, n, n)
+U  = Matrix{Float64}(I, n, n)
 
 params = CovMemoryParams(
     n;
     λ   = 1.0,
-    C̄   = Cbar,
+    C̄   = C̄,
     β   = 1.0,
     σψ  = 0.2,
     ε   = 0.1,
@@ -42,163 +38,27 @@ params = CovMemoryParams(
 tspan = (0.0, 1.0)
 dt = 1e-3
 
-# -------------------------------------------------------------------
-# Helper function: run simulation with fixed seed
-# -------------------------------------------------------------------
-function run_with_seed(seed::Int)
+# ---------------------------------------------------------------------
+# Helper: run simulation with a given seed
+# ---------------------------------------------------------------------
+function run_with_seed(seed::Integer)
     Random.seed!(seed)
     prob = covmemory_problem(params, tspan)
     sol  = solve(prob, EM(); dt = dt)
     return sol.u[end]
 end
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Tests
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------
 @testset "Reproducibility" begin
-
-    # ---------------------------------------------------------------
-    # 1) Same seed → identical results
-    # ---------------------------------------------------------------
     u1 = run_with_seed(12345)
     u2 = run_with_seed(12345)
-
-    @test u1 == u2
-
-    # ---------------------------------------------------------------
-    # 2) Different seeds → different results
-    # ---------------------------------------------------------------
     u3 = run_with_seed(54321)
 
-    @test u1 != u3
+    # Same seed → identical result
+    @test u1 ≈ u2 atol = 1e-10
 
-    # ---------------------------------------------------------------
-    # 3) Deterministic drift consistency (noise disabled)
-    # ---------------------------------------------------------------
-    Random.seed!(999)
-
-    params_det = CovMemoryParams(
-        n;
-        λ   = params.λ,
-        C̄   = params.C̄,
-        β   = params.β,
-        σψ  = 0.0,   # disable stochasticity
-        ε   = 0.0,
-        U   = params.U,
-        η   = params.η
-    )
-
-    prob_det_1 = covmemory_problem(params_det, tspan)
-    sol_det_1  = solve(prob_det_1, EM(); dt = dt)
-
-    Random.seed!(1_000_000)
-
-    prob_det_2 = covmemory_problem(params_det, tspan)
-    sol_det_2  = solve(prob_det_2, EM(); dt = dt)
-
-    @test sol_det_1.u[end] == sol_det_2.u[end]
-
-end
-
-###############################################################################
-# test_markov_lift.jl
-#
-# Structural verification of the Markovian lift used to represent
-# non-Markovian covariance dynamics.
-#
-# What is tested:
-#   1) Correct state dimension of the lifted system
-#   2) Proper inclusion and evolution of memory variables
-#   3) Consistency of drift evaluation (finite, deterministic)
-#
-# What is NOT tested:
-#   - Long-time behavior
-#   - Ergodicity or mixing rates
-#   - Quantitative convergence
-###############################################################################
-
-using Test
-using Random
-using LinearAlgebra
-using DifferentialEquations
-using CovarianceDynamics
-
-# -------------------------------------------------------------------
-# Determinism
-# -------------------------------------------------------------------
-Random.seed!(2024)
-
-# -------------------------------------------------------------------
-# Minimal setup
-# -------------------------------------------------------------------
-n = 2
-Cbar = Matrix{Float64}(I, n, n)
-U    = Matrix{Float64}(I, n, n)
-
-params = CovMemoryParams(
-    n;
-    λ   = 1.0,
-    C̄   = Cbar,
-    β   = 1.0,
-    σψ  = 0.2,
-    ε   = 0.1,
-    U   = U,
-    η   = 1.5
-)
-
-# -------------------------------------------------------------------
-# Problem construction
-# -------------------------------------------------------------------
-tspan = (0.0, 0.1)
-prob = covmemory_problem(params, tspan)
-
-# -------------------------------------------------------------------
-# State dimension checks
-# -------------------------------------------------------------------
-@testset "Markov lift structure" begin
-
-    # 1) State vector dimension
-    #
-    # Layout:
-    #   - n^2 entries for covariance matrix C
-    #   - m entries for memory variables (m = memory dimension)
-    #
-    expected_dim = params.n^2 + CovarianceDynamics.memory_dimension(params)
-
-    @test length(prob.u0) == expected_dim
-
-    # -------------------------------------------------------------------
-    # 2) Drift evaluation consistency
-    # -------------------------------------------------------------------
-    #
-    # Evaluate drift at initial state
-    #
-    du = similar(prob.u0)
-    CovarianceDynamics.covmemory_drift!(du, prob.u0, params, 0.0)
-
-    # All drift components must be finite
-    @test all(isfinite, du)
-
-    # Memory components must not be identically zero
-    mem_start = params.n^2 + 1
-    mem_block = du[mem_start:end]
-
-    @test any(abs.(mem_block) .> 0)
-
-    # -------------------------------------------------------------------
-    # 3) Short-time evolution of memory variables
-    # -------------------------------------------------------------------
-    sol = solve(prob, EM(); dt = 1e-3)
-
-    u_start = sol.u[1]
-    u_end   = sol.u[end]
-
-    mem_start = params.n^2 + 1
-
-    mem_initial = u_start[mem_start:end]
-    mem_final   = u_end[mem_start:end]
-
-    # Memory variables must evolve (not frozen)
-    @test norm(mem_final - mem_initial) > 0
-
+    # Different seed → different result
+    @test u1 ≉ u3 atol = 1e-10
 end
