@@ -1,0 +1,124 @@
+###############################################################################
+# ci.yml
+#
+# Continuous Integration for CovarianceDynamics.jl
+#
+# PURPOSE
+# -------
+# This workflow provides deterministic, reproducible CI for:
+#   • structural correctness
+#   • stochastic reproducibility
+#   • SciML ecosystem compatibility
+#
+# DESIGN PRINCIPLES
+# -----------------
+# • No plots
+# • No benchmarks
+# • No GPUs
+# • No network access
+# • No hidden logic
+# • Fail fast, fail clearly
+#
+# This workflow is intentionally conservative and boring.
+###############################################################################
+
+name: CI
+
+###############################################################################
+# Triggers
+###############################################################################
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+###############################################################################
+# Jobs
+###############################################################################
+jobs:
+  test:
+    name: Julia CI (Unit Tests)
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        julia-version: ['1.9', '1.10', '1.11']
+        os: [ubuntu-latest]
+
+    steps:
+      #########################################################################
+      # Step 1: Checkout repository
+      #########################################################################
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      #########################################################################
+      # Step 2: Set up Julia
+      #########################################################################
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.julia-version }}
+
+      #########################################################################
+      # Step 3: Cache Julia packages and artifacts
+      #
+      # WHY:
+      #   • Reduces CI time
+      #   • Encourages deterministic environments
+      #   • Avoids unnecessary downloads
+      #########################################################################
+      - name: Cache Julia environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.julia/artifacts
+            ~/.julia/packages
+            ~/.julia/compiled
+          key: ${{ runner.os }}-julia-${{ matrix.julia-version }}-${{ hashFiles('**/Manifest.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-${{ matrix.julia-version }}
+
+      #########################################################################
+      # Step 4: Instantiate project environment
+      #
+      # IMPORTANT:
+      #   • Uses Project.toml + Manifest.toml
+      #   • No global environment leakage
+      #########################################################################
+      - name: Instantiate dependencies
+        run: |
+          julia --project=. -e '
+            using Pkg
+            Pkg.instantiate()
+            Pkg.precompile()
+          '
+
+      #########################################################################
+      # Step 5: Run unit tests
+      #
+      # IMPORTANT:
+      #   • Only unit tests (test/)
+      #   • No experiments/
+      #   • No validation diagnostics
+      #   • No coverage (kept simple & deterministic)
+      #########################################################################
+      - name: Run unit tests
+        env:
+          JULIA_NUM_THREADS: 1
+        run: |
+          julia --project=. -e '
+            using Pkg
+            Pkg.test("CovarianceDynamics"; coverage=false)
+          '
+
+###############################################################################
+# Notes for reviewers
+###############################################################################
+# • This CI intentionally tests only unit tests, not experiments.
+# • Long-running diagnostics are documented but not enforced in CI.
+# • CI failures indicate structural or reproducibility issues.
+# • Numerical instability in extreme regimes is not a CI failure.
+###############################################################################
