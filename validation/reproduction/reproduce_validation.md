@@ -243,5 +243,4 @@ This reproduction layer ensures that validation results are:
 
 
 
-If you want, I can help with **any of those next**.
-```
+
